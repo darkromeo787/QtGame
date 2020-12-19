@@ -5,13 +5,16 @@
 #include <QWidget>
 #include <QMouseEvent>
 #include <QPushButton>
-#include <QTime>
 #include <QLabel>
+#include <QMenuBar>
+#include <QMenu>
+#include <QAction>
+#include <time.h>
 
-#define CHESS 'O'
-#define BOUND 'X'
+#define CHESS 'o'
+#define BOUND 'x'
 #define BLANK '-'
-#define HISTORY_RECORD_NUM 10+1 // 循环队列长度+1
+#define HISTORY_RECORD_NUM (10+1) // 循环队列长度+1
 
 // 坐标
 typedef struct
@@ -38,6 +41,7 @@ typedef struct
 {
     chess_state   state;
     history_state history;
+    int usedTime;
 }diamond_game;
 
 void initChessBoard(chess_state *cs);
@@ -46,6 +50,7 @@ int isValidMove(chess_state *cs, coordinate from, coordinate to);
 void oneMove(diamond_game *game, coordinate from, coordinate to);
 void undoMove(diamond_game *game);
 int checkGameOver(diamond_game *game);
+void showChessBoard(diamond_game *game);
 void saveRecord(int leftChess, int costTime);
 
 void rank(diamond_game *game);
@@ -60,23 +65,35 @@ public:
     void mousePressEvent(QMouseEvent *);
     void mouseReleaseEvent(QMouseEvent *);
 
+public slots: // 实时显示时间
+    void timeUpdate(void);
 
 private:
-    int leftGap = 20;
-    int topGap = 20;
+    int leftGap = 50;
+    int topGap = 50;
     int chessSpan = 70;
     int chessRadius = 18;
 
     diamond_game *game;
     coordinate movefrom, moveto;
+
     QTime *startTime;
+    int usedTime, loadTime;  // 本局游戏用时 载入游戏用时
     bool gameStart;
+    bool gameEnd;
 
 
     QPushButton *backButton, *exitButton, *saveButton;
     QLabel *timeLabel;
 
-    void paintChess(chess_state *cs);
+    void initSet();
+    void setTimeLabel(QLabel *timeLabel);
+    void setBackButton(QPushButton *button);
+    void aboutAuthor();
+    void aboutGame();
+//    void trigerMenu(QAction* act);
+
+    void paintChess(QPainter &painter, chess_state *cs);
     void paintCoin(QPainter &painter,int x, int y, QColor color);
     bool getRowCol(QPoint pt, int &x, int &y);
     QPoint chessPosition(int x, int y)

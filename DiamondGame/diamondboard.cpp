@@ -3,6 +3,9 @@
 #include <QWidget>
 #include <QMouseEvent>
 #include <QPushButton>
+#include <QTimer>
+#include <QTime>
+#include <QMessageBox>
 #include <stdio.h>
 
 void initChessBoard(chess_state *cs)
@@ -24,6 +27,7 @@ void initChessBoard(chess_state *cs)
 void initGame(diamond_game *game)
 {
     initChessBoard(&(game->state));
+    game->usedTime = 0;
     game->history.front = 0;
     game->history.rear = 0;
 }
@@ -74,6 +78,8 @@ void oneMove(diamond_game *game, coordinate from, coordinate to)
     game->state.board[from.x][from.y] = BLANK;
     game->state.board[mid.x][mid.y] = BLANK;
     game->state.board[to.x][to.y] = CHESS;
+
+    showChessBoard(game);
 }
 
 void undoMove(diamond_game *game)
@@ -89,6 +95,8 @@ void undoMove(diamond_game *game)
 
     game->state = game->history.backup[lastIndex];
     game->history.front = lastIndex;
+
+    showChessBoard(game);
 }
 
 int checkGameOver(diamond_game *game)
@@ -176,7 +184,27 @@ int getLeftChess(diamond_game *game)
 
 void showChessBoard(diamond_game *game)
 {
+    const char *debugFile = "debug.txt";
+    FILE *f = fopen(debugFile, "a+");
+
+    fputs("   1234567\n", f);
     int i, j;
+    for(i=0;i<7;i++)
+    {
+        fputc('0'+i, f);
+        fputc(':', f);
+        fputc(' ', f);
+
+        for(j=0;j<7;j++)
+            fputc(game->state.board[i][j], f);
+        fputc('\n', f);
+    }
+
+    fclose(f);
+
+    return;
+
+
     putchar(' ');
     putchar(' ');
     putchar(' ');
@@ -193,45 +221,226 @@ void showChessBoard(diamond_game *game)
     }
 
     printf("======================\n");
+
 }
 
-void saveRecord(int leftChess, int costTime)
+void saveRecord(diamond_game *game, int leftChess, int costTime)
 {
+    const char *debugFile = "record.txt";
+    FILE *f = fopen(debugFile, "a+");
 
+    fputs("   1234567\n", f);
+    int i, j;
+    for(i=0;i<7;i++)
+    {
+        fputc('0'+i, f);
+        fputc(':', f);
+        fputc(' ', f);
+
+        for(j=0;j<7;j++)
+            fputc(game->state.board[i][j], f);
+        fputc('\n', f);
+    }
+
+    fclose(f);
+
+}
+
+void saveGame(diamond_game *game, int usedTime)
+{
+    game->usedTime = usedTime;
+    const char *gameFile = "game.db";
+    FILE *f = fopen(gameFile, "w");
+
+    char *contentBuf;
+    int gSize = sizeof(diamond_game);
+    fwrite(game, gSize, 1, f);
+
+    fclose(f);
+}
+
+void loadGame(diamond_game *game)
+{
+    const char *gameFile = "game.db";
+    FILE *f = fopen(gameFile, "r");
+
+    char *contentBuf;
+    int gSize = sizeof(diamond_game);
+    fread(game, gSize, 1, f);
+
+    fclose(f);
 }
 
 DiamondBoard::DiamondBoard(diamond_game *game, QWidget *parent) :
 	QWidget(parent)
 {
+    this->game = game;
+
+    // 面板组件
     startTime = new QTime();
-    gameStart = false;
-
     timeLabel = new QLabel(this);
-
     backButton = new QPushButton("Back", this);
     exitButton = new QPushButton("Exit", this);
     saveButton = new QPushButton("Save", this);
 
-    this->game = game;
-    resize(800, 550);
+    //菜单栏
+    QMenuBar *mBar = new QMenuBar(this);
+    QMenu *menu1 = mBar->addMenu("选择");
+    QMenu *menu2 = mBar->addMenu("排行榜");
+    QMenu *menu3 = mBar->addMenu("游戏说明");
 
-    timeLabel->setGeometry(600, 200, 100, 30);
-    timeLabel->setText("0.00s");
+    QAction *saveAction = menu1->addAction("保存");
+    QAction *loadAction = menu1->addAction("载入");
+    QAction *gameAction = menu1->addAction("新游戏");
+    QAction *exitAction = menu1->addAction("保存并退出");
 
-    backButton->setGeometry(600, 300, 100, 30);
-    // 悔棋
-    connect(backButton, &QPushButton::clicked,
-            [=](){ undoMove(this->game); movefrom.x = -1; update(); });
+    QAction *helpAction = menu3->addAction("关于游戏");
+    QAction *authorAction = menu3->addAction("关于作者");
+
+//    connect(mBar, SIGNAL(triggered(QAction*)),this, SLOT(trigerMenu(QAction*)));
+// 改为以下方式
+
+    connect(saveAction, &QAction::triggered,
+            [=](){ saveGame(game, usedTime); });
+
+    connect(loadAction, &QAction::triggered,
+            [=]() {
+                    diamond_game game;
+                    loadGame(&game);
+                    *this->game = game;
+
+                    movefrom.x = -1;
+                    movefrom.y = -1;
+
+                    loadTime = game.usedTime;
+                    *startTime = QTime::currentTime();
+
+                    update();
+    });
+
+    connect(gameAction, &QAction::triggered,
+            [=]() {
+                    initGame(game);
+                    initSet();
+
+                    update();
+    });
+
+    connect(exitAction, &QAction::triggered,
+            [=]() {
+                    saveGame(game, usedTime);
+                    this->close();
+    });
+
+    connect(helpAction, &QAction::triggered,
+            [=]() { aboutGame(); });
+
+    connect(authorAction, &QAction::triggered,
+            [=]() { aboutAuthor(); });
+
+    // 位置、功能设置
+    setTimeLabel(timeLabel);
+    setBackButton(backButton);
+
+    resize(800, 600);
 
     saveButton->setGeometry(600, 350, 100, 30);
+    connect(saveButton, &QPushButton::clicked,
+            [=](){ saveGame(game, usedTime); });
 
 
     exitButton->setGeometry(600, 400, 100, 30);
     // 退出游戏
     connect(exitButton, &QPushButton::clicked,
             [=](){ this->close(); });
+
+    initSet();
+
 }
 
+/*
+void DiamondBoard::trigerMenu(QAction *act)
+{
+    if (act->text()=="保存")
+    {
+        saveGame(game, usedTime);
+    }
+    else if (act->text()=="载入")
+    {
+        diamond_game game;
+        loadGame(&game);
+        *this->game = game;
+
+        movefrom.x = -1;
+        loadTime = game.usedTime;
+        *startTime = QTime::currentTime();
+
+        update();
+    }
+    else if (act->text()=="新游戏")
+    {
+        initGame(game);
+        initSet();
+
+        update();
+    }
+    else if (act->text()=="退出")
+    {
+        saveGame(game, usedTime);
+        this->close();
+    }
+}
+*/
+
+void DiamondBoard::aboutGame()
+{
+    QMessageBox::about(this, "About Game", "        独立钻石是源于18世纪法国的宫廷贵族的自我挑战类单人棋游戏。棋盘是一个对称的“十字形”，纵横各有4条短线，3条长线，形成33个交点。\n      走棋的规则与跳棋基本一样，就是一枚棋子可以跳过一枚棋子然后落在空格里，如果还满足跳过棋子可以落在空格的条件，就连续跳到无法再跳为止，这个过程算一步。需要注意的是，行棋时，不许转弯跳或斜跳；被跳过的棋子必须从棋盘上取下来，算作被吃掉，最后在棋盘上留下来的棋子越少越好。");
+
+}
+
+void DiamondBoard::aboutAuthor()
+{
+    QMessageBox::about(this, "About Author", "by izcat @ cnblogs.com/izcat");
+}
+
+void DiamondBoard::initSet()
+{
+    gameStart = false;
+    gameEnd = false;
+    usedTime = 0;
+    loadTime = 0;
+
+    movefrom.x = -1;
+    movefrom.y = -1;
+    moveto.x = -1;
+    moveto.y = -1;
+
+    timeLabel->setText("0s");
+}
+
+void DiamondBoard::setTimeLabel(QLabel *timeLabel)
+{
+    // 时间显示
+    QFont font;
+    font.setPointSize(25);
+
+    timeLabel->setFont(font);
+    timeLabel->setGeometry(600, 200, 100, 30);
+
+    // 实时显示时间
+    // 建立信号槽关系，1s后启动时间更新
+    QTimer *timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(timeUpdate()));
+    timer->start(1000);
+}
+
+void DiamondBoard::setBackButton(QPushButton *button)
+{
+    // 悔棋
+    connect(button, &QPushButton::clicked,
+            [=](){ undoMove(this->game); movefrom.x=-1; update(); });
+    button->setGeometry(600, 300, 100, 30);
+}
 
 void DiamondBoard::paintEvent(QPaintEvent *)
 {
@@ -262,15 +471,13 @@ void DiamondBoard::paintEvent(QPaintEvent *)
         }
 	}
 
-    paintChess(&game->state);
+    paintChess(painter, &game->state);
 
 
-    timeLabel->setText(QString::number(startTime->elapsed()/1000)+"s");
 }
 
-void DiamondBoard::paintChess(chess_state *cs)
+void DiamondBoard::paintChess(QPainter &painter, chess_state *cs)
 {
-    QPainter painter(this);
     char chess_type;
 
     for (int i=0;i<7;i++)
@@ -328,11 +535,15 @@ bool DiamondBoard::getRowCol(QPoint pt, int &x, int &y)
 
 void DiamondBoard::mousePressEvent(QMouseEvent *me)
 {
+    /*
     if (!gameStart)
     {
         startTime->start();
         gameStart = true;
     }
+
+    if (gameEnd)
+        return;
 
     QPoint pt = me->pos();
     int x, y;
@@ -349,11 +560,22 @@ void DiamondBoard::mousePressEvent(QMouseEvent *me)
 
     update();
 
-    printf("from %d %d\n", x, y);
+//    printf("from %d %d\n", x, y);
+    */
 }
 
 void DiamondBoard::mouseReleaseEvent(QMouseEvent *me)
 {
+    if (!gameStart)
+    {
+        startTime->start();
+        gameStart = true;
+    }
+
+    if (gameEnd)
+        return;
+
+
     QPoint pt = me->pos();
     int x, y;
     bool ret = getRowCol(pt, x, y);
@@ -361,30 +583,60 @@ void DiamondBoard::mouseReleaseEvent(QMouseEvent *me)
     if (!ret)  // 棋盘外
         return;
 
-    if (game->state.board[x][y]==BLANK)
+    if (movefrom.x==-1 && movefrom.y==-1 &&
+        game->state.board[x][y]==CHESS ) // 第一次点击 是棋子
+    {
+        movefrom.x = x;
+        movefrom.y = y;
+
+    }
+    else if (movefrom.x!=-1 && movefrom.y!=-1 &&
+            game->state.board[x][y]!=CHESS )// 第二次点击 不是棋子
     {
         moveto.x = x;
         moveto.y = y;
+
         if (isValidMove(&(game->state), movefrom, moveto))
         {
             oneMove(game, movefrom, moveto);
             bool gameover = checkGameOver(game);
             if (gameover)
             {
+                usedTime = startTime->elapsed()/1000 + usedTime;
+                gameEnd = true;
 
                 int k = getLeftChess(game);
-                saveRecord(k, startTime->elapsed());
+                saveRecord(game, k, usedTime);
             }
         }
+
+        movefrom.x = -1;
+        movefrom.y = -1;
     }
     else
     {
-        movefrom.x = -1;
-        movefrom.x = -1;
+        return;
     }
-    printf("to %d %d\n", x, y);
+
+//    printf("to %d %d\n", x, y);
 
     update();
 }
 
+void DiamondBoard::timeUpdate()
+{
+    if (!gameStart)
+        return;
+
+    if (gameEnd)
+    {
+        timeLabel->setText(QString::number(usedTime)+"s");
+    }
+    else
+    {
+        QTime currentTime = QTime::currentTime();
+        usedTime = startTime->secsTo(currentTime) + loadTime;
+        timeLabel->setText(QString::number(usedTime)+"s");
+    }
+}
 
