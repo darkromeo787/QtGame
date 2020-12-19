@@ -61,3 +61,6 @@
 - 游戏计时处理了很久，QTimer、QTime、c_time类型都尝试了，在设计timeLabel更新上，都会存在重新载入计时错误问题  
   解决：  
   熟悉了QTime类型后，不再用其他方式实现，QTimer仅用作定时器，触发更新实时显示的时间标签  
+  实际上是由于 `connect(loadAction, &QAction::triggered, [=]() { ... } ` 中的槽函数声明了局部变量 `game`，调用结束后，game所指向数据域可能已经销毁，所以棋盘也有一定概率会为空  
+  - 计时可以用 QTimer 对象， elapsed方法计算从 start/restart调用后经过的毫秒数  
+  - 也可以用 QTime 对象，startTime->secsTo(QTime::currentTime()) 返回从 startTime 到 当前的经过的秒数  
