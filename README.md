@@ -21,13 +21,13 @@
 
 ## 功能实现
 
-- 实现虚函数`paintEvent(QPaintEvent*)`,绘画棋盘，棋子
+- 实现虚函数`paintEvent(QPaintEvent*)`,绘画棋盘，棋子  
 
   重写`mousePressEvent`, `mouseReleaseEvent`这两个方法实现鼠标相关操作
 
 - 使用定时器`QTimer`作为信号，与槽函数`timeUpdate`绑定，更新计时标签。
 
-- 基于循环队列实现悔棋棋局的记录，这种方式比较容易实现
+- 基于循环队列实现悔棋棋局的记录，这种方式比较容易实现  
 
   可以优化为存储每一步的移动，悔棋的实现逻辑会稍微复杂一些
 
@@ -39,25 +39,25 @@
 
 ## 问题记录
 
-- 分离前后端逻辑 三个文件无法编译 initGame
-  解决：
-  直接将后台代码整合到Qt的视图代码diamondboard.cpp中
+- 分离前后端逻辑 三个文件无法编译 initGame  
+  解决：  
+  直接将后台代码整合到Qt的视图代码diamondboard.cpp中  
 
   **项目结构待优化**
   
-- 悔棋有超过限定次数会出现棋局混乱
-  原因：循环队列存在负数取模，C语言结果与数学含义不一致
-  解决： + 取模值
-  ~~int lastIndex = (index - 1) % HISTORY_RECORD_NUM;~~
+- 悔棋有超过限定次数会出现棋局混乱  
+  原因：循环队列存在负数取模，C语言结果与数学含义不一致  
+  解决： + 取模值  
+  ~~int lastIndex = (index - 1) % HISTORY_RECORD_NUM;~~  
   int lastIndex = (index - 1 + HISTORY_RECORD_NUM) % HISTORY_RECORD_NUM;
 
-- 循环队列只能存 模数 - 1 个状态
-  将宏定义改为 #define HISTORY_RECORD_NUM 10+1，后发现 悔棋后棋盘会为空
-  由于宏定义替换为整体 10+1 影响了计算顺序
-  解决： 改为 11 或加括号 (10+1)
+- 循环队列只能存 模数 - 1 个状态  
+  将宏定义改为 #define HISTORY_RECORD_NUM 10+1，后发现 悔棋后棋盘会为空  
+  由于宏定义替换为整体 10+1 影响了计算顺序  
+  解决： 改为 11 或加括号 (10+1)  
 
   #define HISTORY_RECORD_NUM (10+1)
   
-- 游戏计时处理了很久，QTimer、QTime、c_time类型都尝试了，在设计timeLabel更新上，都会存在重新载入计时错误问题
-  解决：
-  熟悉了QTime类型后，不再用其他方式实现，QTimer仅用作定时器，触发更新实时显示的时间标签
+- 游戏计时处理了很久，QTimer、QTime、c_time类型都尝试了，在设计timeLabel更新上，都会存在重新载入计时错误问题  
+  解决：  
+  熟悉了QTime类型后，不再用其他方式实现，QTimer仅用作定时器，触发更新实时显示的时间标签  
