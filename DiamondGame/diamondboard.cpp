@@ -305,14 +305,12 @@ DiamondBoard::DiamondBoard(diamond_game *game, QWidget *parent) :
 
     connect(loadAction, &QAction::triggered,
             [=]() {
-                    diamond_game game;
-                    loadGame(&game);
-                    *this->game = game;
+                    loadGame(game);
 
                     movefrom.x = -1;
                     movefrom.y = -1;
 
-                    loadTime = game.usedTime;
+                    loadTime = game->usedTime;
                     *startTime = QTime::currentTime();
 
                     update();
