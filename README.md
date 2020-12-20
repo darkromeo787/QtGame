@@ -15,8 +15,6 @@
 - 排行榜
 - 保存游戏进度
 
-![](./requirement.jpg)
-
 
 
 ## 功能实现
@@ -41,9 +39,26 @@
 
 - 分离前后端逻辑 三个文件无法编译 initGame  
   解决：  
-  直接将后台代码整合到Qt的视图代码diamondboard.cpp中  
+  ~~直接将后台代码整合到Qt的视图代码diamondboard.cpp中~~  
 
-  **项目结构待优化**
+  ~~项目结构待优化~~
+  
+  了解到C与C++代码不能直接混合编译后，通过条件编译添加 `extern “C” { #include xxx}` 顺利分离游戏核心、游戏界面、记录排行
+  
+  ```cpp
+  DiamondGame.pro     # Qt文件
+  Headers
+  	diamondboard.h
+  	gamecore.h
+  	record.h
+  Sources
+  	main.cpp
+  	diamondboard.cpp
+  	gamecore.c
+  	record.c
+  ```
+  
+  
   
 - 悔棋有超过限定次数会出现棋局混乱  
   原因：循环队列存在负数取模，C语言结果与数学含义不一致  
@@ -67,7 +82,11 @@
 
 ## 结果展示
   - 第一版
-![第一版](./result/1.0.png)
+  ![第一版](./result/1.0.png)
+
   - 第二版
-![第二版](./result/2.0.jpg)
+  ![第二版](./result/2.0.jpg)
+
   - 第三版
+
+    ![第三版](./result/3.0.png)
