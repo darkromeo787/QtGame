@@ -767,6 +767,12 @@ void DiamondBoard::mouseReleaseEvent(QMouseEvent *me)
 
     }
     else if (movefrom.x!=-1 && movefrom.y!=-1 &&
+            game->state.board[x][y]==CHESS )// 第二次点击 是棋子
+    {
+        movefrom.x = x;
+        movefrom.y = y;
+    }
+    else if (movefrom.x!=-1 && movefrom.y!=-1 &&
             game->state.board[x][y]!=CHESS )// 第二次点击 不是棋子
     {
         moveto.x = x;
