@@ -1,6 +1,14 @@
 #ifndef DIAMONDBOARD_H
 #define DIAMONDBOARD_H
 
+#ifdef __cplusplus
+
+extern "C" {
+#include "record.h"
+#endif
+#ifdef __cplusplus
+}
+
 #include <QBasicTimer>
 #include <QWidget>
 #include <QMouseEvent>
@@ -10,6 +18,7 @@
 #include <QMenu>
 #include <QAction>
 #include <time.h>
+
 
 #define CHESS 'o'
 #define BOUND 'x'
@@ -44,22 +53,6 @@ typedef struct
     history_state history;
     int usedTime;
 }diamond_game;
-
-#define LEVEL_NUM  6
-#define RECORD_NUM 10
-typedef struct
-{
-    int level;
-    int costTime;
-    char name[30];
-}game_record;
-
-
-typedef struct
-{
-    game_record records[LEVEL_NUM][RECORD_NUM]; // 六个等级 每个等级记录前十名
-    int tot[LEVEL_NUM]; // 每个等级记录条数
-}game_rank_rec;
 
 
 void initChessBoard(chess_state *cs);
@@ -124,5 +117,6 @@ public slots:
 };
 
 
+#endif
 
 #endif // DIAMONDBOARD_H
