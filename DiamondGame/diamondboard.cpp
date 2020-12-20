@@ -6,6 +6,10 @@
 #include <QTimer>
 #include <QTime>
 #include <QMessageBox>
+#include <QInputDialog>
+#include <QTableView>
+#include <QHeaderView>
+#include <QStandardItemModel>
 #include <stdio.h>
 
 void initChessBoard(chess_state *cs)
@@ -152,7 +156,7 @@ int getLeftChess(diamond_game *game)
     }
 
     if (leftChess==1 && game->state.board[3][3]==CHESS)
-        leftChess = -1;
+        leftChess = 0;
 
     return leftChess;
 //    switch (leftChess)
@@ -271,6 +275,127 @@ void loadGame(diamond_game *game)
     fclose(f);
 }
 
+
+
+
+
+// ======================================
+
+
+void showRankingRecord(game_rank_rec *rec)
+{
+    printf("level | used time | name\n");
+
+    int lev, cnt;
+    game_record *gRec;
+
+    for (lev=0;lev<LEVEL_NUM;lev++)
+    {
+        for (cnt=0;cnt<rec->tot[lev];cnt++)
+        {
+            gRec = &rec->records[lev][cnt];
+            printf("%5d | %9d | %s\n", lev, gRec->costTime, gRec->name);
+        }
+    }
+
+    printf("===============================\n");
+}
+
+
+// qsort排序比较函数
+int recCmpFunc(const void* rec1, const void* rec2)
+{
+    if ((*(game_record*)rec1).level == (*(game_record*)rec2).level)
+        return (*(game_record*)rec1).costTime > (*(game_record*)rec2).costTime;
+
+    return (*(game_record*)rec1).level > (*(game_record*)rec2).level;
+}
+
+int loadRankingRecord(game_rank_rec *rec)
+{
+    const char *gameRecFile = "gameRec.db";
+    FILE *f = fopen(gameRecFile, "r");
+
+    if (f==NULL) // 第一次载入 无数据返回0
+    {
+        printf("No records\n");
+        return 0;
+    }
+
+    int gSize = sizeof(game_rank_rec);
+    fread(rec, gSize, 1, f);
+
+    // showRankingRecord(rec);
+
+    fclose(f);
+
+    return 1;
+}
+
+void saveRankingRecord(game_rank_rec *rec)
+{
+    const char *gameRecFile = "gameRec.db";
+    FILE *f = fopen(gameRecFile, "w");
+
+    int gSize = sizeof(game_rank_rec);
+    fwrite(rec, gSize, 1, f);
+
+    fclose(f);
+}
+
+int isNewRecord(int level, int costTime)
+{
+    game_rank_rec rec = {0};
+    loadRankingRecord(&rec);
+
+    int cnt = rec.tot[level]; // 记录条数
+    if (cnt<RECORD_NUM)
+        return 1;
+
+    // 已有10条 判断是否比最后的记录小
+    printf("10 full\n");
+    if (costTime < rec.records[level][cnt-1].costTime)
+        return 1;
+    else
+        return 0;
+}
+
+// 先调用 isNewRecord 判断是否需要新的记录
+void saveOneRecord(int level, int costTime, const char *name)
+{
+    if (!isNewRecord(level, costTime))
+    {
+        printf("不是新记录\n");
+        return;
+    }
+
+    // game->usedTime = costTime;
+    game_rank_rec rec = {0};
+    loadRankingRecord(&rec);
+
+    // 插入新的记录
+    int tot = rec.tot[level];
+    // 覆盖末尾的记录
+    if (tot==RECORD_NUM) --tot;
+    // rec.records[level][tot] = (game_record){level, costTime, name};
+    rec.records[level][tot] = (game_record){level, costTime};
+    strcpy(rec.records[level][tot].name, name);
+    rec.tot[level] = ++tot;;
+
+    // 该等级进行排序
+    qsort(rec.records[level], tot, sizeof(game_record), recCmpFunc);
+
+    // showRankingRecord(&rec);
+    // 保存记录
+    saveRankingRecord(&rec);
+}
+
+
+
+
+// ======================================
+
+
 DiamondBoard::DiamondBoard(diamond_game *game, QWidget *parent) :
 	QWidget(parent)
 {
@@ -294,6 +419,7 @@ DiamondBoard::DiamondBoard(diamond_game *game, QWidget *parent) :
     QAction *gameAction = menu1->addAction("新游戏");
     QAction *exitAction = menu1->addAction("保存并退出");
 
+    QAction *rankAction = menu2->addAction("查看排行榜");
     QAction *helpAction = menu3->addAction("关于游戏");
     QAction *authorAction = menu3->addAction("关于作者");
 
@@ -328,6 +454,11 @@ DiamondBoard::DiamondBoard(diamond_game *game, QWidget *parent) :
             [=]() {
                     saveGame(game, usedTime);
                     this->close();
+    });
+
+    connect(rankAction, &QAction::triggered,
+            [=]() {
+                    getRankBoard();
     });
 
     connect(helpAction, &QAction::triggered,
@@ -399,6 +530,53 @@ void DiamondBoard::aboutGame()
 void DiamondBoard::aboutAuthor()
 {
     QMessageBox::about(this, "About Author", "by izcat @ cnblogs.com/izcat");
+}
+
+void DiamondBoard::getRankBoard()
+{
+    /* 创建表格视图 */
+    QTableView *tableView = new QTableView();
+
+    /* 设置表格视图大小 */
+    tableView->resize(850, 300);
+
+    /* 创建数据模型 */
+    QStandardItemModel* model = new QStandardItemModel();
+
+    /* 设置表格标题行(输入数据为QStringList类型) */
+    model->setHorizontalHeaderLabels({"Level", "User Name", "Cost Time"});
+
+    /* 自适应所有列，让它布满空间 */
+    tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+
+    /* 加载数据，每行有3列数据 */
+    const char* LEVEL_TYPE[7] = {"天才", "大师", "尖子", "聪明", "很好", "较好", "一般"};
+    game_rank_rec rec;
+    int ret = loadRankingRecord(&rec);
+    if (ret)
+    {
+        int line = 0;
+        for (int i = 0; i < LEVEL_NUM; i++)
+        {
+            for (int j=0;j<rec.tot[i];j++)
+            {
+
+                model->setItem(line, 0, new QStandardItem(QString(LEVEL_TYPE[i])));
+                model->setItem(line, 1, new QStandardItem(QString(rec.records[i][j].name)));
+                model->setItem(line, 2, new QStandardItem(QString("%1").arg(rec.records[i][j].costTime)));
+                ++line;
+            }
+
+        }
+    }
+
+
+    /* 设置表格视图数据 */
+    tableView->setModel(model);
+
+    /* 显示 */
+    tableView->show();
+
 }
 
 void DiamondBoard::initSet()
@@ -603,8 +781,14 @@ void DiamondBoard::mouseReleaseEvent(QMouseEvent *me)
                 usedTime = startTime->elapsed()/1000 + usedTime;
                 gameEnd = true;
 
-                int k = getLeftChess(game);
-                saveRecord(game, k, usedTime);
+                int level = getLeftChess(game);
+                if (isNewRecord(level, usedTime))
+                {
+                    bool ok;
+                    QString name = QInputDialog::getText(this, "新记录", "请输入用户名:", QLineEdit::Normal, "izcat", &ok);
+                    if (ok)
+                        saveOneRecord(level, usedTime, name.toStdString().c_str());
+                }
             }
         }
 
