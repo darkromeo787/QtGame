@@ -1,4 +1,4 @@
-# 基于Gt的独立钻石游戏
+基于Gt的独立钻石游戏
 
 很久没有写C代码了，接了一个大作业外包活，帮忙实现一个C语言小游戏。
 
@@ -64,3 +64,10 @@
   实际上是由于 `connect(loadAction, &QAction::triggered, [=]() { ... } ` 中的槽函数声明了局部变量 `game`，调用结束后，game所指向数据域可能已经销毁，所以棋盘也有一定概率会为空  
   - 计时可以用 QTimer 对象， elapsed方法计算从 start/restart调用后经过的毫秒数  
   - 也可以用 QTime 对象，startTime->secsTo(QTime::currentTime()) 返回从 startTime 到 当前的经过的秒数  
+
+## 结果展示
+  - 第一版
+![第一版](./result/1.0.png)
+  - 第二版
+![第二版](./result/2.0.jpg)
+  - 第三版
