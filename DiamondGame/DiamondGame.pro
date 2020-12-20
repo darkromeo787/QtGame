@@ -22,9 +22,11 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         main.cpp \
     diamondboard.cpp \
-    record.c
+    record.c \
+    gamecore.c
 
 HEADERS += \
     diamondboard.h \
-    record.h
+    record.h \
+    gamecore.h
 
