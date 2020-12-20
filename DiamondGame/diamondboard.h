@@ -36,10 +36,10 @@ public slots: // 实时显示时间
     void timeUpdate(void);
 
 private:
-    int leftGap = 50;
-    int topGap = 50;
-    int chessSpan = 70;
-    int chessRadius = 18;
+    const int leftGap = 50;     // 棋盘左边空白大小
+    const int topGap = 50;      // 棋盘顶部空白大小
+    const int chessSpan = 70;   // 棋子间隔空白大小
+    const int chessRadius = 18; // 棋子大小
 
     diamond_game *game;
     coordinate movefrom, moveto;
@@ -49,17 +49,19 @@ private:
     bool gameStart;
     bool gameEnd;
 
-
     QPushButton *backButton, *exitButton, *saveButton;
     QLabel *timeLabel;
 
+    // 初始化界面
     void initSet();
-    void setTimeLabel(QLabel *timeLabel);
-    void setBackButton(QPushButton *button);
+    void setMenuBar();
+    void setTimeLabel();
+    void setButtons();
+
+
     void aboutAuthor();
     void aboutGame();
     void getRankBoard();
-//    void trigerMenu(QAction* act);
 
     void paintChess(QPainter &painter, chess_state *cs);
     void paintCoin(QPainter &painter,int x, int y, QColor color);

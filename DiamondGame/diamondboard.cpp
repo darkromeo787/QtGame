@@ -10,7 +10,6 @@
 #include <QTableView>
 #include <QHeaderView>
 #include <QStandardItemModel>
-#include <stdio.h>
 
 
 DiamondBoard::DiamondBoard(diamond_game *game, QWidget *parent) :
@@ -25,7 +24,20 @@ DiamondBoard::DiamondBoard(diamond_game *game, QWidget *parent) :
     exitButton = new QPushButton("Exit", this);
     saveButton = new QPushButton("Save", this);
 
-    //菜单栏
+    // 菜单栏
+    setMenuBar();
+
+    // 位置、功能设置
+    setTimeLabel();
+    setButtons();
+
+    resize(800, 600);
+    initSet();
+
+}
+
+void DiamondBoard::setMenuBar()
+{
     QMenuBar *mBar = new QMenuBar(this);
     QMenu *menu1 = mBar->addMenu("选择");
     QMenu *menu2 = mBar->addMenu("排行榜");
@@ -39,9 +51,6 @@ DiamondBoard::DiamondBoard(diamond_game *game, QWidget *parent) :
     QAction *rankAction = menu2->addAction("查看排行榜");
     QAction *helpAction = menu3->addAction("关于游戏");
     QAction *authorAction = menu3->addAction("关于作者");
-
-//    connect(mBar, SIGNAL(triggered(QAction*)),this, SLOT(trigerMenu(QAction*)));
-// 改为以下方式
 
     connect(saveAction, &QAction::triggered,
             [=](){ saveGame(game, usedTime); });
@@ -83,25 +92,6 @@ DiamondBoard::DiamondBoard(diamond_game *game, QWidget *parent) :
 
     connect(authorAction, &QAction::triggered,
             [=]() { aboutAuthor(); });
-
-    // 位置、功能设置
-    setTimeLabel(timeLabel);
-    setBackButton(backButton);
-
-    resize(800, 600);
-
-    saveButton->setGeometry(600, 350, 100, 30);
-    connect(saveButton, &QPushButton::clicked,
-            [=](){ saveGame(game, usedTime); });
-
-
-    exitButton->setGeometry(600, 400, 100, 30);
-    // 退出游戏
-    connect(exitButton, &QPushButton::clicked,
-            [=](){ this->close(); });
-
-    initSet();
-
 }
 
 /*
@@ -140,7 +130,13 @@ void DiamondBoard::trigerMenu(QAction *act)
 
 void DiamondBoard::aboutGame()
 {
-    QMessageBox::about(this, "About Game", "        独立钻石是源于18世纪法国的宫廷贵族的自我挑战类单人棋游戏。棋盘是一个对称的“十字形”，纵横各有4条短线，3条长线，形成33个交点。\n      走棋的规则与跳棋基本一样，就是一枚棋子可以跳过一枚棋子然后落在空格里，如果还满足跳过棋子可以落在空格的条件，就连续跳到无法再跳为止，这个过程算一步。需要注意的是，行棋时，不许转弯跳或斜跳；被跳过的棋子必须从棋盘上取下来，算作被吃掉，最后在棋盘上留下来的棋子越少越好。");
+    QMessageBox::about(this, "About Game",
+                       "        独立钻石是源于18世纪法国的宫廷贵族的自我挑战类单人棋游戏。"
+                       "棋盘是一个对称的“十字形”，纵横各有4条短线，3条长线，形成33个交点。\n"
+                       "        走棋的规则与跳棋基本一样，就是一枚棋子可以跳过一枚棋子然后落在空格里，"
+                       "如果还满足跳过棋子可以落在空格的条件，就连续跳到无法再跳为止，这个过程算一步。"
+                       "需要注意的是，行棋时，不许转弯跳或斜跳；被跳过的棋子必须从棋盘上取下来，算作被吃掉，"
+                       "最后在棋盘上留下来的棋子越少越好。");
 
 }
 
@@ -167,7 +163,6 @@ void DiamondBoard::getRankBoard()
     tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
 
     /* 加载数据，每行有3列数据 */
-    const char* LEVEL_TYPE[7] = {"天才", "大师", "尖子", "聪明", "很好", "较好", "一般"};
     game_rank_rec rec;
     int ret = loadRankingRecord(&rec);
     if (ret)
@@ -211,7 +206,7 @@ void DiamondBoard::initSet()
     timeLabel->setText("0s");
 }
 
-void DiamondBoard::setTimeLabel(QLabel *timeLabel)
+void DiamondBoard::setTimeLabel()
 {
     // 时间显示
     QFont font;
@@ -227,12 +222,23 @@ void DiamondBoard::setTimeLabel(QLabel *timeLabel)
     timer->start(1000);
 }
 
-void DiamondBoard::setBackButton(QPushButton *button)
+void DiamondBoard::setButtons()
 {
     // 悔棋
-    connect(button, &QPushButton::clicked,
+    backButton->setGeometry(600, 300, 100, 30);
+    connect(backButton, &QPushButton::clicked,
             [=](){ undoMove(this->game); movefrom.x=-1; update(); });
-    button->setGeometry(600, 300, 100, 30);
+
+    // 保存游戏
+    saveButton->setGeometry(600, 350, 100, 30);
+    connect(saveButton, &QPushButton::clicked,
+            [=](){ saveGame(game, usedTime); });
+
+    // 退出游戏
+    exitButton->setGeometry(600, 400, 100, 30);
+    connect(exitButton, &QPushButton::clicked,
+            [=](){ this->close(); });
+
 }
 
 void DiamondBoard::paintEvent(QPaintEvent *)

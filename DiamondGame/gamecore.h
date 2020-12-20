@@ -35,18 +35,21 @@ typedef struct
     int usedTime;
 }diamond_game;
 
-
+// 初始化
 void initChessBoard(chess_state *cs);
 void initGame(diamond_game *game);
 
+// 移动棋子
 int isValidMove(chess_state *cs, coordinate from, coordinate to);
 void oneMove(diamond_game *game, coordinate from, coordinate to);
 void undoMove(diamond_game *game);
 
+// 游戏结束
 int checkGameOver(diamond_game *game);
 int getLeftChess(diamond_game *game);
 void showChessBoard(diamond_game *game);
 
+// 保存/载入游戏
 void saveGame(diamond_game *game, int usedTime);
 void loadGame(diamond_game *game);
 

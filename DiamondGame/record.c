@@ -1,5 +1,9 @@
 #include "record.h"
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+const char* LEVEL_TYPE[7] = {"天才", "大师", "尖子", "聪明", "很好", "较好", "一般"};
 
 void showRankingRecord(game_rank_rec *rec)
 {
@@ -97,7 +101,7 @@ void saveOneRecord(int level, int costTime, const char *name)
     // 覆盖末尾的记录
     if (tot==RECORD_NUM) --tot;
     // rec.records[level][tot] = (game_record){level, costTime, name};
-    rec.records[level][tot] = (game_record){level, costTime};
+    rec.records[level][tot] = (game_record){level, costTime, ""};
     strcpy(rec.records[level][tot].name, name);
     rec.tot[level] = ++tot;;
 

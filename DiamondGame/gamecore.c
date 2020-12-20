@@ -224,7 +224,6 @@ void saveGame(diamond_game *game, int usedTime)
     const char *gameFile = "game.db";
     FILE *f = fopen(gameFile, "w");
 
-    char *contentBuf;
     int gSize = sizeof(diamond_game);
     fwrite(game, gSize, 1, f);
 
@@ -236,7 +235,6 @@ void loadGame(diamond_game *game)
     const char *gameFile = "game.db";
     FILE *f = fopen(gameFile, "r");
 
-    char *contentBuf;
     int gSize = sizeof(diamond_game);
     fread(game, gSize, 1, f);
 
